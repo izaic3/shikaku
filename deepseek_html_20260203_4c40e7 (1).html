@@ -1,0 +1,1310 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Shikaku — Calm Blocks</title>
+  <style>
+    :root {
+      --bg1: #f7f9ff;
+      --bg2: #f3fff8;
+      --card: #ffffffcc;
+      --ink: #22304a;
+      --muted: #5a6b86;
+      --grid: #cfd8ea;
+      --grid2: #b9c6e3;
+
+      --accent1: #9fd3ff;
+      /* calm sky */
+      --accent2: #b6f2d1;
+      /* mint */
+      --accent3: #ffd7a3;
+      /* apricot */
+      --accent4: #e6c7ff;
+      /* lavender */
+      --accent5: #ffc1d6;
+      /* rose */
+      --accent6: #c7f0ff;
+      /* pale cyan */
+
+      --bad: #ff6b6b;
+      --good: #22c55e;
+
+      --shadow: 0 10px 30px rgba(34, 48, 74, .12);
+      --radius: 18px;
+      --radius2: 14px;
+      --tap: 12px;
+    }
+
+    /* Fix: ensure borders don't increase size, preventing overlaps */
+    *,
+    *:before,
+    *:after {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 800px at 15% 10%, var(--accent6), transparent 60%),
+        radial-gradient(1200px 800px at 80% 15%, var(--accent4), transparent 60%),
+        radial-gradient(1200px 800px at 70% 85%, var(--accent2), transparent 60%),
+        radial-gradient(1200px 800px at 20% 80%, var(--accent3), transparent 60%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      overflow-x: hidden;
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 10px 14px 10px;
+      /* reduced top/bottom padding */
+      padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    }
+
+    header {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-top: 6px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 240px;
+    }
+
+    .title h1 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: .2px;
+    }
+
+    .title .sub {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.2;
+    }
+
+    .panel {
+      background: var(--card);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(185, 198, 227, .6);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 10px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      /* Left align buttons */
+      min-width: 280px;
+    }
+
+    select,
+    button {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 1px solid rgba(185, 198, 227, .9);
+      background: rgba(255, 255, 255, .9);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 10px 12px;
+      font-size: 14px;
+      line-height: 1;
+      box-shadow: 0 4px 16px rgba(34, 48, 74, .08);
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    select {
+      padding-right: 34px;
+      background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+      background-position: calc(100% - 18px) calc(50% - 2px), calc(100% - 12px) calc(50% - 2px);
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.primary {
+      background: linear-gradient(180deg, rgba(159, 211, 255, .95), rgba(199, 240, 255, .9));
+      border-color: rgba(121, 170, 230, .9);
+    }
+
+    button.warn {
+      background: linear-gradient(180deg, rgba(255, 193, 214, .95), rgba(255, 215, 163, .85));
+      border-color: rgba(230, 130, 160, .6);
+    }
+
+    .hud {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      /* keep them packed left/center to avoid spreading too much if 480 is huge */
+      margin-top: 10px;
+    }
+
+    .stat {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(185, 198, 227, .75);
+      background: rgba(255, 255, 255, .75);
+      box-shadow: 0 4px 16px rgba(34, 48, 74, .06);
+      font-size: 14px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent1);
+      box-shadow: 0 0 0 4px rgba(159, 211, 255, .35);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 480px;
+      /* Widen sidebar to allow single-row buttons/stats */
+      gap: 12px;
+      margin-top: 12px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 860px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+
+    @media (max-width: 860px) {
+      #directionsPanel {
+        display: none;
+      }
+
+      .title .sub {
+        display: block;
+      }
+    }
+
+
+    /* Desktop: reclaim vertical space + scale board to fit viewport */
+    @media (min-width: 861px) {
+      .title .sub {
+        display: none;
+      }
+
+      /* move directions to the side */
+      #directionsPanel {
+        display: block;
+      }
+
+      header {
+        align-items: center;
+      }
+
+      .title {
+        min-width: 200px;
+      }
+
+      /* Scale the board based on available viewport height.
+         Tweak the constant if you add more header UI. */
+      .board {
+        width: min(760px, calc(100vh - 320px));
+        max-width: 100%;
+      }
+    }
+
+
+    @media (max-width: 420px) {
+      .wrap {
+        padding: 10px 10px 24px;
+      }
+
+      .board {
+        width: min(96vw, 760px);
+      }
+    }
+
+    .boardWrap {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .boardPanel {
+      padding: 10px;
+    }
+
+    .boardHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    /* Board */
+    .board {
+      --n: 10;
+      width: min(92vw, 760px);
+      max-width: 100%;
+      aspect-ratio: 1 / 1;
+      margin: 0 auto;
+      position: relative;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .72);
+      box-shadow: var(--shadow);
+      /* Direct border for cleaner rounded corners */
+      border: 2px solid rgba(185, 198, 227, .85);
+      overflow: hidden;
+      touch-action: none;
+      /* we handle pan/drag */
+      user-select: none;
+    }
+
+    /* Removed .board::after as direct border is cleaner */
+
+    .grid {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: repeat(var(--n), 1fr);
+      grid-template-rows: repeat(var(--n), 1fr);
+    }
+
+    .cell {
+      position: relative;
+      border-right: 1px solid rgba(207, 216, 234, .95);
+      border-bottom: 1px solid rgba(207, 216, 234, .95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: rgba(34, 48, 74, .95);
+      font-size: clamp(10px, 1.8vw, 15px);
+    }
+
+    .cell.edgeR {
+      border-right: 0;
+    }
+
+    .cell.edgeB {
+      border-bottom: 0;
+    }
+
+    .cell .num {
+      position: relative;
+      z-index: 2;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .82);
+      border: 1px solid rgba(185, 198, 227, .65);
+      box-shadow: 0 4px 10px rgba(34, 48, 74, .08);
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .rect {
+      position: absolute;
+      border-radius: 10px;
+      /* Use box-shadow for smoother border rendering on rounded corners */
+      box-shadow: inset 0 0 0 2px rgba(34, 48, 74, .55), 0 10px 30px rgba(34, 48, 74, .12);
+      background: rgba(159, 211, 255, .35);
+      pointer-events: none;
+    }
+
+
+
+    .preview {
+      position: absolute;
+      border-radius: 10px;
+      border: 2px dashed rgba(34, 48, 74, .5);
+      background: rgba(230, 199, 255, .18);
+      pointer-events: none;
+      box-shadow: 0 10px 30px rgba(34, 48, 74, .10);
+    }
+
+    .preview.invalid {
+      border-color: rgba(255, 107, 107, .75);
+      background: rgba(255, 107, 107, .12);
+    }
+
+    .side {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      /* Distribute panels evenly to match board height */
+      justify-content: space-between;
+      height: 100%;
+    }
+
+    .side h2 {
+      margin: 0 0 4px 0;
+      font-size: 16px;
+      letter-spacing: .2px;
+    }
+
+    .kpi {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      /* 4 columns for single row */
+      gap: 10px;
+    }
+
+    .kpi .box {
+      padding: 12px;
+      border-radius: var(--radius2);
+      border: 1px solid rgba(185, 198, 227, .7);
+      background: rgba(255, 255, 255, .7);
+      box-shadow: 0 4px 16px rgba(34, 48, 74, .06);
+    }
+
+    .kpi .label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .kpi .value {
+      font-size: 18px;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .swatch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(185, 198, 227, .6);
+      background: rgba(255, 255, 255, .65);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .swatch .chip {
+      width: 14px;
+      height: 14px;
+      border-radius: 5px;
+      border: 1px solid rgba(34, 48, 74, .25);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 14px;
+      transform: translateX(-50%);
+      background: rgba(34, 48, 74, .92);
+      color: white;
+      padding: 10px 12px;
+      border-radius: 999px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, .25);
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+      max-width: min(92vw, 520px);
+      text-align: center;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-4px);
+    }
+
+    .win {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 100;
+      width: clamp(280px, 60%, 400px);
+      padding: 24px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: var(--ink);
+      box-shadow: 0 20px 50px rgba(34, 48, 74, .25);
+      text-align: center;
+    }
+
+    .win.show {
+      display: block;
+      animation: popIn .4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popIn {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -40%) scale(0.95);
+      }
+
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    .win.show {
+      display: block;
+    }
+
+    .win .big {
+      font-weight: 900;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .win .big.record {
+      color: #e63946;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    .win .small {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    /* Desktop layout tweaks: maximize vertical space for the board */
+    @media (min-width: 861px) {
+
+      /* Hide the color legend row to save vertical space */
+      #legend {
+        display: none;
+      }
+
+      /* Put more room into the board by shrinking some padding */
+      .boardPanel {
+        padding: 8px;
+      }
+
+      .boardHeader {
+        margin-bottom: 8px;
+      }
+
+      /* Scale the board to fit viewport height (since controls live in sidebar) */
+      /* Scale the board to fit viewport height (since controls live in sidebar) */
+      /* Reduced from 220px to 120px subtraction to ensure it definitely fits without scrolling
+         even on shorter screens. */
+      .board {
+        width: min(760px, calc(100vh - 120px));
+        max-width: 100%;
+      }
+
+      /* Right-top container spacing */
+      #rightTopSlot {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      /* Make header compact on desktop */
+      header {
+        margin-top: 4px;
+        margin-bottom: 8px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <h1>Shikaku — Calm Blocks</h1>
+        <div class="sub">Drag to draw rectangles. Each rectangle must contain <b>exactly one</b> number and have area
+          equal to that number.</div>
+      </div>
+      <div id="controlsSlot">
+        <div class="panel controls" aria-label="Top controls">
+          <label>
+            <select id="difficulty" aria-label="Difficulty">
+              <option value="easy">Easy (6×6)</option>
+              <option value="medium" selected>Medium (8×8)</option>
+              <option value="hard">Hard (10×10)</option>
+              <option value="expert">Expert (12×12)</option>
+              <option value="insane">Insane (15×15)</option>
+            </select>
+          </label>
+          <button class="primary" id="newBtn">New Puzzle</button>
+          <button id="undoBtn">Undo</button>
+          <button class="warn" id="clearAllBtn">Clear All</button>
+        </div>
+      </div>
+    </header>
+    <div id="hudSlot">
+      <div class="panel hud">
+        <div class="stat">
+          <span class="pill"><span class="dot"></span><b>Timer:</b> <span id="timer">00:00</span></span>
+          <span class="pill"><b>Best:</b> <span id="bestTime">--:--</span></span>
+          <span class="pill"><b>Filled:</b> <span id="filled">0%</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="boardWrap">
+        <div class="panel boardPanel">
+          <div class="boardHeader">
+            <div class="hint" id="hintText">
+              Tip: On mobile, drag with one finger. Tap a placed rectangle to remove it.
+            </div>
+            <div class="legend" id="legend"></div>
+          </div>
+
+          <div class="board" id="board" role="application" aria-label="Shikaku board">
+            <div class="grid" id="grid"></div>
+            <div class="overlay" id="overlay"></div>
+          </div>
+        </div>
+
+        <div class="win" id="winBox">
+          <div class="big" id="winTitle">🎉 Puzzle Solved!</div>
+          <div class="small">Time: <span id="winTime">00:00</span> • Try a harder one for extra spice.</div>
+          <div style="margin-top:16px"><button onclick="document.getElementById('newBtn').click()">Next Puzzle</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="side">
+        <div id="rightTopSlot"></div>
+
+        <div class="panel directionsPanel" id="directionsPanel">
+          <h2>Directions</h2>
+          <div class="hint">
+            Drag to draw rectangles. Each rectangle must contain <b>exactly one</b> number and have area equal to that
+            number.
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Status</h2>
+          <div class="kpi">
+            <div class="box">
+              <div class="label">Rectangles</div>
+              <div class="value" id="rectCount">0</div>
+            </div>
+            <div class="box">
+              <div class="label">Best Time</div>
+              <div class="value" id="bestTimeKpi">--:--</div>
+            </div>
+            <div class="box">
+              <div class="label">Board Size</div>
+              <div class="value" id="boardSize">8×8</div>
+            </div>
+            <div class="box">
+              <div class="label">Clues</div>
+              <div class="value" id="clueCount">0</div>
+            </div>
+          </div>
+          <div class="hint" style="margin-top:10px">
+            Rules recap:
+            <ul style="margin:6px 0 0 18px; padding:0; color:var(--muted)">
+              <li>Rectangles can't overlap.</li>
+              <li>Every cell must be inside a rectangle.</li>
+              <li>Each rectangle contains exactly one number.</li>
+              <li>Rectangle area = that number.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Quick controls</h2>
+          <div class="hint">
+            <b>Draw:</b> drag from one cell to another.<br />
+            <b>Delete:</b> tap an existing rectangle.<br />
+            <b>Undo:</b> removes your last rectangle.<br />
+            <b>Clear All:</b> clears all your rectangles.
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      // ----------------------------
+      // Best time storage
+      // ----------------------------
+      const STORAGE_KEY = 'shikaku_best_times';
+      
+      function getBestTimes() {
+        try {
+          return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+        } catch {
+          return {};
+        }
+      }
+      
+      function saveBestTime(difficulty, timeMs) {
+        const times = getBestTimes();
+        const currentBest = times[difficulty];
+        
+        if (!currentBest || timeMs < currentBest) {
+          times[difficulty] = timeMs;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(times));
+          return true; // New record
+        }
+        return false; // Not a record
+      }
+      
+      function formatBestTime(ms) {
+        if (!ms || ms === Infinity) return '--:--';
+        const total = Math.floor(ms / 1000);
+        const m = Math.floor(total / 60);
+        const s = total % 60;
+        return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+      }
+      
+      function updateBestTimeDisplay(difficulty) {
+        const times = getBestTimes();
+        const best = times[difficulty];
+        document.getElementById('bestTime').textContent = formatBestTime(best);
+        document.getElementById('bestTimeKpi').textContent = formatBestTime(best);
+      }
+
+      // ----------------------------
+      // Guaranteed-solvable puzzle generator
+      // ----------------------------
+      function generatePuzzle(diff) {
+        const cfg = {
+          easy: { n: 6, targetRects: 7, tries: 700 },
+          medium: { n: 8, targetRects: 11, tries: 1100 },
+          hard: { n: 10, targetRects: 16, tries: 1600 },
+          expert: { n: 12, targetRects: 26, tries: 2600 },
+          insane: { n: 15, targetRects: 40, tries: 4200 },
+        }[diff];
+
+        const n = cfg.n;
+
+        // Start with one rectangle covering the whole board
+        let rects = [{ r1: 0, c1: 0, r2: n - 1, c2: n - 1 }];
+
+        const rectArea = (r) => (r.r2 - r.r1 + 1) * (r.c2 - r.c1 + 1);
+        const w = (r) => (r.c2 - r.c1 + 1);
+        const h = (r) => (r.r2 - r.r1 + 1);
+        const canSplitH = (r) => h(r) >= 2;
+        const canSplitV = (r) => w(r) >= 2;
+
+        // Split rectangles until target count reached (random but biased toward larger)
+        for (let t = 0; t < cfg.tries && rects.length < cfg.targetRects; t++) {
+          rects.sort((a, b) => rectArea(b) - rectArea(a));
+          const pickPool = rects.slice(0, Math.min(rects.length, 5));
+          const idx = rects.indexOf(pickPool[Math.floor(Math.random() * pickPool.length)]);
+          const r = rects[idx];
+
+          const doH = canSplitH(r) && (!canSplitV(r) || Math.random() < 0.5);
+          if (doH) {
+            const cut = r.r1 + Math.floor(Math.random() * (h(r) - 1)); // between rows
+            const rA = { r1: r.r1, c1: r.c1, r2: cut, c2: r.c2 };
+            const rB = { r1: cut + 1, c1: r.c1, r2: r.r2, c2: r.c2 };
+            rects.splice(idx, 1, rA, rB);
+          } else if (canSplitV(r)) {
+            const cut = r.c1 + Math.floor(Math.random() * (w(r) - 1)); // between cols
+            const rA = { r1: r.r1, c1: r.c1, r2: r.r2, c2: cut };
+            const rB = { r1: r.r1, c1: cut + 1, r2: r.r2, c2: r.c2 };
+            rects.splice(idx, 1, rA, rB);
+          }
+        }
+
+        // Place one clue per rectangle: clue value = rectangle area
+        const clues = [];
+        const used = new Set();
+        for (const r of rects) {
+          const a = rectArea(r);
+          let rr, cc, key;
+          for (let tries = 0; tries < 200; tries++) {
+            rr = r.r1 + Math.floor(Math.random() * h(r));
+            cc = r.c1 + Math.floor(Math.random() * w(r));
+            key = rr + "," + cc;
+            if (!used.has(key)) break;
+          }
+          used.add(key);
+          clues.push({ r: rr, c: cc, v: a });
+        }
+
+        return { n, clues };
+      }
+
+      // ----------------------------
+      // Desktop: move top UI (difficulty/timer/buttons) into right sidebar
+      // ----------------------------
+      const controlsPanel = document.querySelector(".panel.controls");
+      const hudPanel = document.querySelector(".panel.hud");
+      const controlsSlot = document.getElementById("controlsSlot");
+      const hudSlot = document.getElementById("hudSlot");
+      const rightTopSlot = document.getElementById("rightTopSlot");
+      const mqlDesktop = window.matchMedia("(min-width: 861px)");
+
+      function relocateUI() {
+        if (!controlsPanel || !hudPanel || !controlsSlot || !hudSlot || !rightTopSlot) return;
+
+        if (mqlDesktop.matches) {
+          // move into sidebar
+          if (controlsPanel.parentElement !== rightTopSlot) rightTopSlot.appendChild(controlsPanel);
+          if (hudPanel.parentElement !== rightTopSlot) rightTopSlot.appendChild(hudPanel);
+        } else {
+          // move back to top
+          if (controlsPanel.parentElement !== controlsSlot) controlsSlot.appendChild(controlsPanel);
+          if (hudPanel.parentElement !== hudSlot) hudSlot.appendChild(hudPanel);
+        }
+
+        // after moving, re-render overlays so sizing stays correct
+        renderAll();
+      }
+
+      if (mqlDesktop.addEventListener) mqlDesktop.addEventListener("change", relocateUI);
+      window.addEventListener("resize", relocateUI);
+
+      // ----------------------------
+      // State
+      // ----------------------------
+      const el = (id) => document.getElementById(id);
+
+      const boardEl = el("board");
+      const gridEl = el("grid");
+      const overlayEl = el("overlay");
+
+      const diffEl = el("difficulty");
+      const timerEl = el("timer");
+      const filledEl = el("filled");
+      const rectCountEl = el("rectCount");
+      const boardSizeEl = el("boardSize");
+      const clueCountEl = el("clueCount");
+      const winBox = el("winBox");
+      const winTimeEl = el("winTime");
+      const winTitleEl = el("winTitle");
+      const legendEl = el("legend");
+
+      const newBtn = el("newBtn");
+      const undoBtn = el("undoBtn");
+      const clearAllBtn = el("clearAllBtn");
+      const toastEl = el("toast");
+
+      let puzzle = null;
+
+      // placements: list of rectangles {r1,c1,r2,c2,colorIndex}
+      let placements = [];
+
+      // occupancy grid: rect index or -1
+      let occ = [];
+      let nums = []; // grid values, 0 if none
+
+      // drag preview
+      let dragging = false;
+      let dragStart = null; // {r,c}
+      let dragEnd = null;   // {r,c}
+      let previewEl = null;
+
+      // timer
+      let t0 = 0;
+      let tickHandle = null;
+
+      const palette = [
+        getCSS("--accent1"),
+        getCSS("--accent2"),
+        getCSS("--accent3"),
+        getCSS("--accent4"),
+        getCSS("--accent5"),
+        getCSS("--accent6"),
+      ];
+
+      function getCSS(v) {
+        return getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+      }
+
+      function startTimer() {
+        if (tickHandle) return;
+        t0 = performance.now();
+        tickHandle = setInterval(() => {
+          timerEl.textContent = formatTime(performance.now() - t0);
+        }, 200);
+      }
+      
+      function stopTimer() {
+        if (tickHandle) {
+          clearInterval(tickHandle);
+          tickHandle = null;
+        }
+      }
+      
+      function formatTime(ms) {
+        const total = Math.floor(ms / 1000);
+        const m = Math.floor(total / 60);
+        const s = total % 60;
+        return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+      }
+
+      function init(diff) {
+        puzzle = generatePuzzle(diff);
+        const n = puzzle.n;
+
+        boardEl.style.setProperty("--n", n);
+        boardSizeEl.textContent = `${n}×${n}`;
+
+        // clear
+        placements = [];
+        occ = Array.from({ length: n }, () => Array.from({ length: n }, () => -1));
+        nums = Array.from({ length: n }, () => Array.from({ length: n }, () => 0));
+        winBox.classList.remove("show");
+
+        // fill numbers
+        for (const { r, c, v } of puzzle.clues) nums[r][c] = v;
+        clueCountEl.textContent = puzzle.clues.length;
+
+        // build grid DOM
+        gridEl.innerHTML = "";
+        overlayEl.innerHTML = "";
+        for (let r = 0; r < n; r++) {
+          for (let c = 0; c < n; c++) {
+            const cell = document.createElement("div");
+            cell.className = "cell" + (c === n - 1 ? " edgeR" : "") + (r === n - 1 ? " edgeB" : "");
+            cell.dataset.r = r;
+            cell.dataset.c = c;
+
+            const v = nums[r][c];
+            if (v) {
+              const span = document.createElement("span");
+              span.className = "num";
+              span.textContent = v;
+              cell.appendChild(span);
+            }
+            gridEl.appendChild(cell);
+          }
+        }
+
+        // legend chips
+        legendEl.innerHTML = "";
+        palette.forEach((p, i) => {
+          const sw = document.createElement("span");
+          sw.className = "swatch";
+          const chip = document.createElement("span");
+          chip.className = "chip";
+          chip.style.background = `color-mix(in srgb, ${p} 55%, white 45%)`;
+          sw.appendChild(chip);
+          sw.appendChild(document.createTextNode(`Color ${i + 1}`));
+          legendEl.appendChild(sw);
+        });
+
+        // timer reset + start
+        stopTimer();
+        t0 = performance.now();
+        timerEl.textContent = "00:00";
+        startTimer();
+        
+        // Update best time display
+        updateBestTimeDisplay(diff);
+
+        renderAll();
+        // Removed the "New puzzle loaded" toast message
+      }
+
+      // ----------------------------
+      // Geometry helpers
+      // ----------------------------
+      function clampRect(a, b) {
+        const r1 = Math.min(a.r, b.r);
+        const r2 = Math.max(a.r, b.r);
+        const c1 = Math.min(a.c, b.c);
+        const c2 = Math.max(a.c, b.c);
+        return { r1, c1, r2, c2 };
+      }
+      
+      function area(rect) {
+        return (rect.r2 - rect.r1 + 1) * (rect.c2 - rect.c1 + 1);
+      }
+      
+      function eachCell(rect, fn) {
+        for (let r = rect.r1; r <= rect.r2; r++) {
+          for (let c = rect.c1; c <= rect.c2; c++) {
+            fn(r, c);
+          }
+        }
+      }
+      
+      function intersectsExisting(rect) {
+        let hit = false;
+        eachCell(rect, (r, c) => { if (occ[r][c] !== -1) hit = true; });
+        return hit;
+      }
+      
+      function countCluesInRect(rect) {
+        let count = 0;
+        let clue = null;
+        eachCell(rect, (r, c) => {
+          if (nums[r][c]) {
+            count++;
+            clue = { r, c, v: nums[r][c] };
+          }
+        });
+        return { count, clue };
+      }
+
+      function rectToPx(rect) {
+        const n = puzzle.n;
+        const w = boardEl.clientWidth;
+        const h = boardEl.clientHeight;
+        const cellW = w / n;
+        const cellH = h / n;
+        const left = rect.c1 * cellW;
+        const top = rect.r1 * cellH;
+        const width = (rect.c2 - rect.c1 + 1) * cellW;
+        const height = (rect.r2 - rect.r1 + 1) * cellH;
+        return { left, top, width, height };
+      }
+
+      function renderAll() {
+        overlayEl.innerHTML = "";
+        placements.forEach((p, idx) => {
+          const rect = { r1: p.r1, c1: p.c1, r2: p.r2, c2: p.c2 };
+          const box = rectToPx(rect);
+          const d = document.createElement("div");
+          d.className = "rect valid";
+          const col = palette[p.colorIndex % palette.length];
+          d.style.background = `color-mix(in srgb, ${col} 45%, white 55%)`;
+          d.style.left = box.left + "px";
+          d.style.top = box.top + "px";
+          d.style.width = box.width + "px";
+          d.style.height = box.height + "px";
+          d.dataset.idx = idx;
+          overlayEl.appendChild(d);
+        });
+        updateStats();
+      }
+
+      function updateStats() {
+        const n = puzzle.n;
+        let filled = 0;
+        for (let r = 0; r < n; r++) {
+          for (let c = 0; c < n; c++) {
+            if (occ[r][c] !== -1) filled++;
+          }
+        }
+        const pct = Math.floor((filled / (n * n)) * 100);
+        filledEl.textContent = `${pct}%`;
+        rectCountEl.textContent = placements.length;
+
+        if (pct === 100 && isSolvedStrict()) {
+          const elapsedMs = performance.now() - t0;
+          const isNewRecord = saveBestTime(diffEl.value, elapsedMs);
+          
+          winBox.classList.add("show");
+          winTimeEl.textContent = formatTime(elapsedMs);
+          
+          if (isNewRecord) {
+            winTitleEl.textContent = "🏆 NEW RECORD!";
+            winTitleEl.classList.add("record");
+            // Removed the toast for new record - it's shown in the win box now
+            updateBestTimeDisplay(diffEl.value);
+          } else {
+            winTitleEl.textContent = "🎉 Puzzle Solved!";
+            winTitleEl.classList.remove("record");
+          }
+          
+          stopTimer();
+        } else {
+          winBox.classList.remove("show");
+        }
+      }
+
+      function isSolvedStrict() {
+        for (const p of placements) {
+          const rect = { r1: p.r1, c1: p.c1, r2: p.r2, c2: p.c2 };
+          const { count, clue } = countCluesInRect(rect);
+          if (count !== 1) return false;
+          if (area(rect) !== clue.v) return false;
+        }
+        return true;
+      }
+
+      function toast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add("show");
+        clearTimeout(toastEl._t);
+        toastEl._t = setTimeout(() => toastEl.classList.remove("show"), 1400);
+      }
+
+      // ----------------------------
+      // Placement operations
+      // ----------------------------
+      function addPlacement(rect) {
+        const a = area(rect);
+        const clueInfo = countCluesInRect(rect);
+
+        let ok = true;
+        let reason = "";
+
+        if (intersectsExisting(rect)) {
+          ok = false; reason = "Rectangles can't overlap.";
+        } else if (clueInfo.count !== 1) {
+          ok = false; reason = "Must include exactly one number.";
+        } else if (a !== clueInfo.clue.v) {
+          ok = false; reason = `Area is ${a}, but number is ${clueInfo.clue.v}.`;
+        }
+
+        if (!ok) {
+          renderPreview(rect);
+          // flash invalid
+          if (previewEl) previewEl.classList.add("invalid");
+          updateStats();
+          toast(reason);
+          return false;
+        }
+
+        const colorIndex = placements.length % palette.length;
+        const newIdx = placements.length;
+        placements.push({ ...rect, colorIndex });
+
+        eachCell(rect, (r, c) => { occ[r][c] = newIdx; });
+
+        renderAll();
+        // Removed the "Placed" toast message
+        return true;
+      }
+
+      function removePlacementAtCell(r, c) {
+        const idx = occ[r][c];
+        if (idx === -1) return false;
+
+        placements.splice(idx, 1);
+
+        const n = puzzle.n;
+        occ = Array.from({ length: n }, () => Array.from({ length: n }, () => -1));
+        placements.forEach((p, newIdx) => {
+          eachCell(p, (rr, cc) => { occ[rr][cc] = newIdx; });
+        });
+
+        renderAll();
+        toast("Rectangle removed.");
+        return true;
+      }
+
+      function undo() {
+        if (!placements.length) {
+          toast("Nothing to undo.");
+          return;
+        }
+        placements.pop();
+        const n = puzzle.n;
+        occ = Array.from({ length: n }, () => Array.from({ length: n }, () => -1));
+        placements.forEach((p, idx) => eachCell(p, (r, c) => { occ[r][c] = idx; }));
+        renderAll();
+        toast("Undone.");
+      }
+
+      function clearAllPlacements() {
+        placements = [];
+        const n = puzzle.n;
+        occ = Array.from({ length: n }, () => Array.from({ length: n }, () => -1));
+        renderAll();
+        toast("All rectangles cleared.");
+      }
+
+      // ----------------------------
+      // Pointer / touch handling
+      // ----------------------------
+      function getCellFromPoint(clientX, clientY) {
+        const rect = boardEl.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        const n = puzzle.n;
+        if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null;
+        const c = Math.min(n - 1, Math.max(0, Math.floor(x / (rect.width / n))));
+        const r = Math.min(n - 1, Math.max(0, Math.floor(y / (rect.height / n))));
+        return { r, c };
+      }
+
+      function renderPreview(rect) {
+        if (!previewEl) {
+          previewEl = document.createElement("div");
+          previewEl.className = "preview";
+          overlayEl.appendChild(previewEl);
+        }
+        const box = rectToPx(rect);
+        previewEl.style.left = box.left + "px";
+        previewEl.style.top = box.top + "px";
+        previewEl.style.width = box.width + "px";
+        previewEl.style.height = box.height + "px";
+
+        // live validation styling
+        const a = area(rect);
+        const { count, clue } = countCluesInRect(rect);
+        const bad = intersectsExisting(rect) || count !== 1 || (clue && a !== clue.v);
+        previewEl.classList.toggle("invalid", bad);
+      }
+
+      function clearPreview() {
+        if (previewEl) {
+          previewEl.remove();
+          previewEl = null;
+        }
+      }
+
+      let tapCandidate = null;
+
+      function onPointerDown(e) {
+        boardEl.setPointerCapture(e.pointerId);
+        const cell = getCellFromPoint(e.clientX, e.clientY);
+        if (!cell) return;
+
+        tapCandidate = { ...cell, t: performance.now(), x: e.clientX, y: e.clientY };
+
+        dragging = true;
+        dragStart = cell;
+        dragEnd = cell;
+        renderPreview(clampRect(dragStart, dragEnd));
+        e.preventDefault();
+      }
+
+      function onPointerMove(e) {
+        if (!dragging) return;
+        const cell = getCellFromPoint(e.clientX, e.clientY);
+        if (!cell) return;
+
+        dragEnd = cell;
+        renderPreview(clampRect(dragStart, dragEnd));
+        e.preventDefault();
+      }
+
+      function onPointerUp(e) {
+        if (!dragging) return;
+        dragging = false;
+
+        const cell = getCellFromPoint(e.clientX, e.clientY) || dragEnd || dragStart;
+        dragEnd = cell;
+
+        const rect = clampRect(dragStart, dragEnd);
+
+        // tap-to-remove detection
+        if (tapCandidate) {
+          const dt = performance.now() - tapCandidate.t;
+          const dx = Math.abs(e.clientX - tapCandidate.x);
+          const dy = Math.abs(e.clientY - tapCandidate.y);
+          const isTap = dt < 250 && dx < 10 && dy < 10;
+
+          if (isTap) {
+            if (removePlacementAtCell(tapCandidate.r, tapCandidate.c)) {
+              clearPreview();
+              tapCandidate = null;
+              return;
+            }
+          }
+        }
+
+        clearPreview();
+        addPlacement(rect);
+
+        tapCandidate = null;
+        e.preventDefault();
+      }
+
+      function onPointerCancel() {
+        dragging = false;
+        dragStart = null;
+        dragEnd = null;
+        clearPreview();
+      }
+
+      // ----------------------------
+      // Controls
+      // ----------------------------
+      newBtn.addEventListener("click", () => {
+        stopTimer();
+        init(diffEl.value);
+      });
+      
+      diffEl.addEventListener("change", () => {
+        stopTimer();
+        init(diffEl.value);
+      });
+      
+      undoBtn.addEventListener("click", undo);
+      clearAllBtn.addEventListener("click", clearAllPlacements);
+
+      boardEl.addEventListener("pointerdown", onPointerDown);
+      boardEl.addEventListener("pointermove", onPointerMove);
+      boardEl.addEventListener("pointerup", onPointerUp);
+      boardEl.addEventListener("pointercancel", onPointerCancel);
+      boardEl.addEventListener("contextmenu", (e) => e.preventDefault());
+
+      window.addEventListener("resize", () => {
+        renderAll();
+        if (dragging && dragStart && dragEnd) renderPreview(clampRect(dragStart, dragEnd));
+      });
+
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "z" && (e.ctrlKey || e.metaKey)) { undo(); e.preventDefault(); }
+        if (e.key === "n") { init(diffEl.value); e.preventDefault(); }
+      });
+
+      // Start
+      init(diffEl.value);
+      relocateUI();
+    })();
+  </script>
+</body>
+
+</html>
