@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Top 10 Quickest Times</title>
+  <style>
+    :root{
+      --bg:#040715;
+      --card:#07102a;
+      --ink:#f3f7ff;
+      --muted:#b7c3e6;
+      --line:#22335f;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:radial-gradient(1200px 700px at 20% 0%, #1a2a5a 0%, var(--bg) 62%);
+      color:var(--ink);
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:18px}
+    .header{
+      display:flex; justify-content:space-between; align-items:flex-end;
+      gap:14px; flex-wrap:wrap; margin-bottom:14px;
+    }
+    h1{margin:0;font-size:44px;letter-spacing:.2px}
+    .sub{margin:6px 0 0;color:var(--muted);font-size:16px}
+    .badge{
+      display:inline-block;
+      border:1px solid rgba(34,51,95,.9);
+      border-radius:999px;
+      padding:10px 14px;
+      color:var(--muted);
+      font-size:14px;
+      background:rgba(7,16,42,.35);
+    }
+
+    .card{
+      background:linear-gradient(180deg, #081544, var(--card));
+      border:1px solid rgba(34,51,95,.9);
+      border-radius:22px;
+      overflow:hidden;
+      box-shadow:0 18px 70px rgba(0,0,0,.45);
+    }
+
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:18px 18px;border-bottom:1px solid rgba(34,51,95,.55);text-align:left;vertical-align:middle}
+    th{
+      font-size:14px; color:var(--muted);
+      font-weight:800; text-transform:uppercase; letter-spacing:.12em;
+    }
+
+    /* Projector readability */
+    .rank{width:90px;font-size:22px;color:var(--muted);font-weight:800}
+    .name{
+      font-size:44px;           /* BIG NAMES */
+      font-weight:900;
+      letter-spacing:.5px;
+      text-transform:uppercase;  /* optional – comment out if you don’t want this */
+      line-height:1.05;
+    }
+    .time{
+      width:220px;
+      text-align:right;
+      font-size:40px;
+      font-weight:900;
+      font-variant-numeric: tabular-nums;
+    }
+    .date{
+      width:180px;
+      font-size:18px;
+      color:var(--muted);
+    }
+
+    /* top row extra pop */
+    tbody tr:first-child .name,
+    tbody tr:first-child .time{font-size:52px}
+
+    .empty{color:var(--muted);padding:26px;font-size:22px}
+
+    @media (max-width:900px){
+      h1{font-size:34px}
+      .name{font-size:34px}
+      .time{font-size:30px}
+      tbody tr:first-child .name,
+      tbody tr:first-child .time{font-size:40px}
+      .date{display:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <h1>🏁 Top 10 Quickest Times</h1>
+        <p class="sub">Fastest wins • updates live from the admin page</p>
+      </div>
+      <div class="badge" id="updated">Updated: —</div>
+    </div>
+
+    <div class="card">
+      <table aria-label="Leaderboard">
+        <thead>
+          <tr>
+            <th class="rank">Rank</th>
+            <th>Name</th>
+            <th class="date">Date</th>
+            <th style="text-align:right;">Time</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const STORAGE_KEY = "top10_times_v2";
+  const tbody = document.getElementById("tbody");
+  const updated = document.getElementById("updated");
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function formatSeconds(sec) {
+    sec = Math.max(0, Math.round(sec));
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${String(s).padStart(2,"0")}`;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
+  }
+
+  function render() {
+    const arr = load().slice().sort((a,b) => a.seconds - b.seconds).slice(0,10);
+    tbody.innerHTML = "";
+
+    if (arr.length === 0) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="4" class="empty">No times yet. (Open admin.html to add some.)</td>`;
+      tbody.appendChild(tr);
+    } else {
+      arr.forEach((r, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="rank">#${i+1}</td>
+          <td class="name">${escapeHtml(r.name || "")}</td>
+          <td class="date">${r.date ? escapeHtml(r.date) : "—"}</td>
+          <td class="time">${formatSeconds(r.seconds)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    updated.textContent = "Updated: " + new Date().toLocaleString();
+  }
+
+  window.addEventListener("storage", (e) => {
+    if (e.key === STORAGE_KEY) render();
+  });
+
+  setInterval(render, 1500);
+  render();
+})();
+</script>
+</body>
+</html>

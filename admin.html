@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Top 10 Times — Admin</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#101a33; --ink:#e9f0ff; --muted:#a9b7dd; --line:#22335f;
+      --btn:#1a2b55; --btn2:#223667;
+      --good:#4ade80; --bad:#f87171;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:radial-gradient(1100px 600px at 20% 0%, #1a2a5a 0%, var(--bg) 60%);
+      color:var(--ink);
+    }
+    .wrap{max-width:980px;margin:0 auto;padding:16px}
+    .card{
+      background:linear-gradient(180deg, #121e3b, var(--card));
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,.25);
+    }
+    h1{margin:0 0 6px;font-size:22px}
+    p{margin:0 0 14px;color:var(--muted)}
+    .topbar{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap}
+    .pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);font-size:12px}
+    form{
+      display:grid;
+      grid-template-columns: 1.2fr 1fr 1fr auto;
+      gap:10px;
+      align-items:end;
+      margin-top:10px;
+    }
+    label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px}
+    input{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#0e1730;
+      color:var(--ink);
+      outline:none;
+      font-size:14px;
+    }
+    input:focus{border-color:#4c78ff}
+    button{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid #2b3f75;
+      background:var(--btn);
+      color:var(--ink);
+      cursor:pointer;
+      font-weight:700;
+      font-size:14px;
+    }
+    button:hover{background:var(--btn2)}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center}
+    a{color:#9db6ff;text-decoration:none}
+    a:hover{text-decoration:underline}
+    .note{margin-top:10px;font-size:12px;color:var(--muted)}
+    .ok{color:var(--good)}
+    .err{color:var(--bad)}
+    table{width:100%;border-collapse:collapse;margin-top:14px}
+    th,td{padding:10px 8px;border-bottom:1px solid rgba(34,51,95,.6);text-align:left;vertical-align:middle}
+    th{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+    td{font-size:14px}
+    .actions{white-space:nowrap;text-align:right}
+    .mini{
+      padding:8px 10px;
+      font-size:13px;
+      border-radius:10px;
+    }
+
+    /* Simple modal */
+    .backdrop{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+    }
+    .modal{
+      width:min(520px, 100%);
+      background:linear-gradient(180deg, #121e3b, #0f1731);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      box-shadow:0 20px 80px rgba(0,0,0,.5);
+    }
+    .modal h2{margin:0 0 6px;font-size:18px}
+    .modal .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    .modal .grid .full{grid-column:1 / -1}
+    .modal .row{margin-top:12px;justify-content:flex-end}
+    .hint{font-size:12px;color:var(--muted);margin-top:6px}
+    @media (max-width:700px){
+      form{grid-template-columns:1fr 1fr; }
+      form > div:last-child{grid-column:1 / -1}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="topbar">
+        <div>
+          <h1>Admin — Enter / Edit Times</h1>
+          <p>Times are stored as <b>minutes:seconds</b> (example: <b>1:23</b>). Auto-sorts and keeps the fastest 10.</p>
+        </div>
+        <div class="pill">Storage: <b>top10_times_v2</b></div>
+      </div>
+
+      <form id="entryForm" autocomplete="off">
+        <div>
+          <label for="name">Name</label>
+          <input id="name" maxlength="24" placeholder="e.g., Ava" required />
+        </div>
+        <div>
+          <label for="time">Time (m:ss or seconds)</label>
+          <input id="time" inputmode="numeric" placeholder="1:23 or 83" required />
+        </div>
+        <div>
+          <label for="date">Date (optional)</label>
+          <input id="date" type="date" />
+        </div>
+        <div>
+          <button type="submit">Add</button>
+        </div>
+      </form>
+
+      <div class="row">
+        <button id="undoBtn" type="button" class="mini" disabled>↩ Undo last delete</button>
+        <button id="clearBtn" type="button" class="mini">Clear All</button>
+        <button id="seedBtn" type="button" class="mini">Seed Example</button>
+        <a href="./leaderboard.html" target="_blank" rel="noopener">Open Leaderboard →</a>
+      </div>
+
+      <div id="status" class="note"></div>
+
+      <table aria-label="Admin leaderboard preview">
+        <thead>
+          <tr>
+            <th style="width:70px;">Rank</th>
+            <th>Name</th>
+            <th style="width:140px;">Time</th>
+            <th style="width:140px;">Date</th>
+            <th style="width:160px;text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+
+      <div class="note">
+        Tip: Keep <code>leaderboard.html</code> open on your projector — it updates automatically when you add/edit here (same browser).
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="backdrop" id="backdrop" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+    <div class="modal">
+      <h2 id="editTitle">Edit Entry</h2>
+      <div class="hint">Time format: <b>m:ss</b> (like <b>2:05</b>) or plain seconds (<b>125</b>).</div>
+
+      <div class="grid">
+        <div class="full">
+          <label for="editName">Name</label>
+          <input id="editName" maxlength="24" />
+        </div>
+        <div>
+          <label for="editTime">Time</label>
+          <input id="editTime" inputmode="numeric" />
+        </div>
+        <div>
+          <label for="editDate">Date</label>
+          <input id="editDate" type="date" />
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="cancelEdit" type="button" class="mini">Cancel</button>
+        <button id="saveEdit" type="button" class="mini">Save</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const STORAGE_KEY = "top10_times_v2";
+  const $ = (id) => document.getElementById(id);
+
+  const form = $("entryForm");
+  const nameEl = $("name");
+  const timeEl = $("time");
+  const dateEl = $("date");
+  const tbody = $("tbody");
+  const statusEl = $("status");
+
+  const undoBtn = $("undoBtn");
+  const clearBtn = $("clearBtn");
+  const seedBtn = $("seedBtn");
+
+  // Modal elements
+  const backdrop = $("backdrop");
+  const editName = $("editName");
+  const editTime = $("editTime");
+  const editDate = $("editDate");
+  const cancelEdit = $("cancelEdit");
+  const saveEdit = $("saveEdit");
+
+  let editId = null; // which entry we're editing
+  let lastDeleted = null; // { entry, index } for undo (one step)
+
+  function setStatus(msg, kind="") {
+    statusEl.className = "note " + (kind === "ok" ? "ok" : kind === "err" ? "err" : "");
+    statusEl.textContent = msg || "";
+  }
+
+  function sanitizeName(s) {
+    return String(s).trim().slice(0,24).replace(/\s+/g, " ");
+  }
+
+  function normalizeDate(d) {
+    if (!d) return "";
+    return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : "";
+  }
+
+  // Accepts: "83" (seconds) OR "1:23"
+  function parseTimeToSeconds(str) {
+    const s = String(str).trim();
+    if (!s) return NaN;
+
+    if (/^\d+$/.test(s)) {
+      return parseInt(s, 10);
+    }
+
+    const m = s.match(/^(\d{1,3}):([0-5]?\d)$/);
+    if (!m) return NaN;
+
+    const minutes = parseInt(m[1], 10);
+    const seconds = parseInt(m[2], 10);
+    return minutes * 60 + seconds;
+  }
+
+  function formatSeconds(sec) {
+    sec = Math.max(0, Math.round(sec));
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${String(s).padStart(2,"0")}`;
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function save(arr) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+  }
+
+  function sortAndTrim(arr) {
+    // fastest first
+    arr.sort((a,b) => a.seconds - b.seconds || (a.name||"").localeCompare(b.name||""));
+    return arr.slice(0, 10);
+  }
+
+  function openEdit(entry) {
+    editId = entry.id;
+    editName.value = entry.name || "";
+    editTime.value = formatSeconds(entry.seconds);
+    editDate.value = entry.date || "";
+
+    backdrop.style.display = "flex";
+    editName.focus();
+    editName.select();
+  }
+
+  function closeEdit() {
+    editId = null;
+    backdrop.style.display = "none";
+  }
+
+  function render() {
+    const arr = sortAndTrim(load());
+    tbody.innerHTML = "";
+
+    if (arr.length === 0) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="5" style="color:var(--muted);padding:14px 8px;">No entries yet.</td>`;
+      tbody.appendChild(tr);
+    } else {
+      arr.forEach((r, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>#${i+1}</td>
+          <td><b>${escapeHtml(r.name || "")}</b></td>
+          <td>${formatSeconds(r.seconds)}</td>
+          <td>${r.date ? `<span class="pill">${escapeHtml(r.date)}</span>` : `<span class="pill">—</span>`}</td>
+          <td class="actions">
+            <button class="mini" data-action="edit" data-id="${r.id}">✏️ Edit</button>
+            <button class="mini" data-action="del" data-id="${r.id}">🗑 Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    undoBtn.disabled = !lastDeleted;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
+  }
+
+  // Add entry
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    setStatus("");
+
+    const name = sanitizeName(nameEl.value);
+    const seconds = parseTimeToSeconds(timeEl.value);
+    const date = normalizeDate(dateEl.value);
+
+    if (!name) return setStatus("Name is required.", "err");
+    if (!Number.isFinite(seconds) || seconds <= 0) return setStatus("Enter a valid time like 1:23 or 83.", "err");
+
+    const arr = load();
+    arr.push({ id: crypto.randomUUID(), name, seconds, date, createdAt: Date.now() });
+    save(sortAndTrim(arr));
+
+    timeEl.value = "";
+    nameEl.focus();
+
+    setStatus(`Added ${name} — ${formatSeconds(seconds)}.`, "ok");
+    render();
+  });
+
+  // Table actions (edit/delete)
+  tbody.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+
+    const action = btn.dataset.action;
+    const id = btn.dataset.id;
+
+    const arr = load();
+    const idx = arr.findIndex(x => x.id === id);
+    if (idx < 0) return;
+
+    if (action === "edit") {
+      openEdit(arr[idx]);
+      return;
+    }
+
+    if (action === "del") {
+      // Save for undo (one step)
+      lastDeleted = { entry: arr[idx], index: idx };
+      arr.splice(idx, 1);
+      save(sortAndTrim(arr));
+      setStatus(`Deleted "${lastDeleted.entry.name}" — you can Undo.`, "ok");
+      render();
+      return;
+    }
+  });
+
+  // Modal buttons
+  cancelEdit.addEventListener("click", closeEdit);
+  backdrop.addEventListener("click", (e) => {
+    if (e.target === backdrop) closeEdit();
+  });
+
+  saveEdit.addEventListener("click", () => {
+    if (!editId) return;
+
+    const name = sanitizeName(editName.value);
+    const seconds = parseTimeToSeconds(editTime.value);
+    const date = normalizeDate(editDate.value);
+
+    if (!name) return setStatus("Edit failed: name is required.", "err");
+    if (!Number.isFinite(seconds) || seconds <= 0) return setStatus("Edit failed: time must be like 1:23 or 83.", "err");
+
+    const arr = load();
+    const idx = arr.findIndex(x => x.id === editId);
+    if (idx < 0) { closeEdit(); return; }
+
+    arr[idx] = { ...arr[idx], name, seconds, date, editedAt: Date.now() };
+    save(sortAndTrim(arr));
+
+    closeEdit();
+    setStatus(`Updated "${name}" — ${formatSeconds(seconds)}.`, "ok");
+    render();
+  });
+
+  // Keyboard shortcuts in modal
+  document.addEventListener("keydown", (e) => {
+    if (backdrop.style.display !== "flex") return;
+    if (e.key === "Escape") closeEdit();
+    if (e.key === "Enter") saveEdit.click();
+  });
+
+  // Undo last delete (one step)
+  undoBtn.addEventListener("click", () => {
+    if (!lastDeleted) return;
+
+    const arr = load();
+    // Reinsert the deleted entry (then sort/trim)
+    arr.push(lastDeleted.entry);
+    save(sortAndTrim(arr));
+
+    setStatus(`Restored "${lastDeleted.entry.name}".`, "ok");
+    lastDeleted = null;
+    render();
+  });
+
+  // Clear all
+  clearBtn.addEventListener("click", () => {
+    localStorage.removeItem(STORAGE_KEY);
+    lastDeleted = null;
+    setStatus("Cleared all entries.", "ok");
+    render();
+  });
+
+  // Seed
+  seedBtn.addEventListener("click", () => {
+    const demo = [
+      { id: crypto.randomUUID(), name:"AVA",  seconds: 83, date:"2026-02-01", createdAt: Date.now() },
+      { id: crypto.randomUUID(), name:"NOAH", seconds: 79, date:"2026-02-02", createdAt: Date.now() },
+      { id: crypto.randomUUID(), name:"MIA",  seconds: 91, date:"2026-02-03", createdAt: Date.now() },
+      { id: crypto.randomUUID(), name:"LEO",  seconds: 75, date:"2026-02-04", createdAt: Date.now() },
+    ];
+    save(sortAndTrim(demo));
+    lastDeleted = null;
+    setStatus("Seeded example data.", "ok");
+    render();
+  });
+
+  // Live update if other tab changes storage
+  window.addEventListener("storage", (e) => {
+    if (e.key === STORAGE_KEY) render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
