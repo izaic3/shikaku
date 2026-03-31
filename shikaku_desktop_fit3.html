@@ -417,6 +417,52 @@
       border-radius: 6px;
       transform: translateZ(calc(var(--h) * 16px));
       box-shadow: inset 0 0 0 2px rgba(34, 48, 74, .6), 0 calc(var(--h) * 6px) calc(var(--h) * 14px) rgba(34, 48, 74, .16);
+      overflow: visible;
+    }
+
+    .board.mode3d .rect {
+      --face-top: rgba(109, 171, 235, .65);
+      --face-front: rgba(88, 149, 212, .72);
+      --face-side: rgba(70, 129, 194, .74);
+      background: var(--face-top) !important;
+      border: 1px solid rgba(26, 52, 88, .7);
+    }
+
+    .board.mode3d .rect::before,
+    .board.mode3d .rect::after,
+    .board.mode3d .preview::before,
+    .board.mode3d .preview::after {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+      border: 1px solid rgba(26, 52, 88, .52);
+    }
+
+    .board.mode3d .rect::before,
+    .board.mode3d .preview::before {
+      left: 0;
+      right: 0;
+      top: 100%;
+      height: calc(var(--h) * 14px);
+      transform-origin: top;
+      transform: skewX(-42deg);
+      background: var(--face-front, rgba(88, 149, 212, .55));
+    }
+
+    .board.mode3d .rect::after,
+    .board.mode3d .preview::after {
+      top: 0;
+      bottom: 0;
+      left: 100%;
+      width: calc(var(--h) * 14px);
+      transform-origin: left;
+      transform: skewY(-48deg);
+      background: var(--face-side, rgba(70, 129, 194, .55));
+    }
+
+    .board.mode3d .preview {
+      --face-front: rgba(177, 149, 224, .32);
+      --face-side: rgba(145, 117, 195, .3);
     }
 
 
@@ -1062,6 +1108,9 @@
           d.className = "rect valid";
           const col = palette[p.colorIndex % palette.length];
           d.style.background = `color-mix(in srgb, ${col} 45%, white 55%)`;
+          d.style.setProperty("--face-top", `color-mix(in srgb, ${col} 62%, white 38%)`);
+          d.style.setProperty("--face-front", `color-mix(in srgb, ${col} 70%, black 30%)`);
+          d.style.setProperty("--face-side", `color-mix(in srgb, ${col} 58%, black 42%)`);
           d.style.left = box.left + "px";
           d.style.top = box.top + "px";
           d.style.width = box.width + "px";
@@ -1198,6 +1247,13 @@
       // Pointer / touch handling
       // ----------------------------
       function getCellFromPoint(clientX, clientY) {
+        if (is3dMode) {
+          const hit = document.elementFromPoint(clientX, clientY);
+          const cellEl = hit && hit.closest ? hit.closest(".cell") : null;
+          if (cellEl && gridEl.contains(cellEl)) {
+            return { r: Number(cellEl.dataset.r), c: Number(cellEl.dataset.c) };
+          }
+        }
         const rect = boardEl.getBoundingClientRect();
         const x = clientX - rect.left;
         const y = clientY - rect.top;
