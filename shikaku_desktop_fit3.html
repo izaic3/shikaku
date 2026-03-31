@@ -335,11 +335,15 @@
     .cell .num {
       position: relative;
       z-index: 2;
-      padding: 2px 6px;
-      border-radius: 999px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
       background: rgba(255, 255, 255, .82);
       border: 1px solid rgba(185, 198, 227, .65);
       box-shadow: 0 4px 10px rgba(34, 48, 74, .08);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .overlay {
@@ -931,6 +935,7 @@
       let dragEnd = null;   // {r,c}
       let dragHeight = 1;
       let dragStartY = 0;
+      let extrudeState = null; // {idx,startY,startH}
       let previewEl = null;
 
       // timer
@@ -976,7 +981,7 @@
 
       function updateModeCopy() {
         if (is3dMode) {
-          hintTextEl.textContent = "3D: Drag to draw a base rectangle, then drag up/down to set height.";
+          hintTextEl.textContent = "3D: Draw base rectangle first, then drag that rectangle up/down to extrude.";
           directionsPanelEl.querySelector(".hint").innerHTML =
             '3D rules: each prism must contain <b>exactly one</b> base clue, and <b>volume</b> (area × height) must match the clue.';
         } else {
@@ -1206,7 +1211,7 @@
           ok = false; reason = "Rectangles can’t overlap.";
         } else if (clueInfo.count !== 1) {
           ok = false; reason = "Must include exactly one number.";
-        } else if (volume !== clueInfo.clue.v) {
+        } else if (!is3dMode && volume !== clueInfo.clue.v) {
           ok = false; reason = `${is3dMode ? "Volume" : "Area"} is ${is3dMode ? volume : a}, but number is ${clueInfo.clue.v}.`;
         }
 
@@ -1227,7 +1232,7 @@
         eachCell(rect, (r, c) => { occ[r][c] = newIdx; });
 
         renderAll();
-        toast("Placed.");
+        toast(is3dMode ? "Base placed. Drag it up/down to extrude." : "Placed.");
         return true;
       }
 
@@ -1328,34 +1333,67 @@
         const cell = getCellFromPoint(e.clientX, e.clientY);
         if (!cell) return;
 
+        if (is3dMode) {
+          const idx = occ[cell.r][cell.c];
+          if (idx !== -1) {
+            extrudeState = { idx, startY: e.clientY, startH: placements[idx].h || 1 };
+            dragging = false;
+            tapCandidate = null;
+            e.preventDefault();
+            return;
+          }
+        }
+
         tapCandidate = { ...cell, t: performance.now(), x: e.clientX, y: e.clientY };
 
         dragging = true;
         dragStart = cell;
         dragEnd = cell;
-        dragHeight = 1;
+        dragHeight = 1; // new placements start as base-only
         dragStartY = e.clientY;
         renderPreview(clampRect(dragStart, dragEnd), dragHeight);
         e.preventDefault();
       }
 
       function onPointerMove(e) {
+        if (extrudeState) {
+          const deltaY = extrudeState.startY - e.clientY;
+          const nextH = Math.max(1, Math.min(MAX_HEIGHT, extrudeState.startH + Math.round(deltaY / 36)));
+          if (placements[extrudeState.idx]) {
+            placements[extrudeState.idx].h = nextH;
+            renderAll();
+          }
+          e.preventDefault();
+          return;
+        }
+
         if (!dragging) return;
         const cell = getCellFromPoint(e.clientX, e.clientY);
         if (!cell) return;
 
         dragEnd = cell;
-        if (is3dMode) {
-          const deltaY = dragStartY - e.clientY;
-          dragHeight = Math.max(1, Math.min(MAX_HEIGHT, 1 + Math.round(deltaY / 36)));
-        } else {
-          dragHeight = 1;
-        }
+        dragHeight = 1;
         renderPreview(clampRect(dragStart, dragEnd), dragHeight);
         e.preventDefault();
       }
 
       function onPointerUp(e) {
+        if (extrudeState) {
+          const p = placements[extrudeState.idx];
+          if (p) {
+            const rect = { r1: p.r1, c1: p.c1, r2: p.r2, c2: p.c2 };
+            const clueInfo = countCluesInRect(rect);
+            if (clueInfo.count === 1) {
+              const vol = area(rect) * (p.h || 1);
+              toast(vol === clueInfo.clue.v ? `Extruded to height ${p.h}.` : `Height ${p.h}: volume ${vol}/${clueInfo.clue.v}`);
+            }
+            updateStats();
+          }
+          extrudeState = null;
+          e.preventDefault();
+          return;
+        }
+
         if (!dragging) return;
         dragging = false;
 
@@ -1388,6 +1426,7 @@
       }
 
       function onPointerCancel() {
+        extrudeState = null;
         dragging = false;
         dragStart = null;
         dragEnd = null;
