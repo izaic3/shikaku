@@ -347,6 +347,12 @@
       inset: 0;
       pointer-events: none;
     }
+    .numOverlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 6;
+    }
 
     .rect {
       position: absolute;
@@ -372,6 +378,158 @@
       border-color: rgba(255, 107, 107, .75);
       background: rgba(255, 107, 107, .12);
     }
+
+    .modeToggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.75);
+      cursor: pointer;
+      user-select: none;
+      font-size: 13px;
+      color: var(--ink);
+    }
+
+    .rotateCtl {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .board.mode3d {
+      perspective: 900px;
+      transform-style: preserve-3d;
+    }
+
+    .board.mode3d .grid,
+    .board.mode3d .overlay {
+      transform-style: preserve-3d;
+      transform: rotateX(56deg) rotateZ(var(--yaw, -24deg)) scale(var(--zoom, 1));
+      transform-origin: 50% 64%;
+    }
+
+    .board.mode3d .cell .num {
+      opacity: 0;
+    }
+
+    .numBillboard {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .82);
+      border: 1px solid rgba(185, 198, 227, .65);
+      box-shadow: 0 4px 10px rgba(34, 48, 74, .08);
+      font-weight: 700;
+      color: rgba(34, 48, 74, .95);
+      font-size: clamp(10px, 1.8vw, 15px);
+    }
+
+    .board.mode3d .rect,
+    .board.mode3d .preview {
+      --h: 1;
+      --depth: 14px;
+      border-radius: 6px;
+      transform: translateZ(calc(var(--h) * var(--depth)));
+      box-shadow: inset 0 0 0 2px rgba(34, 48, 74, .6), 0 calc(var(--h) * 6px) calc(var(--h) * 14px) rgba(34, 48, 74, .16);
+      overflow: visible;
+    }
+
+    .board.mode3d .rect {
+      --face-top: rgba(109, 171, 235, .65);
+      --face-front: rgba(88, 149, 212, .72);
+      --face-side: rgba(70, 129, 194, .74);
+      background: var(--face-top) !important;
+      border: 1px solid rgba(26, 52, 88, .7);
+      background-image:
+        repeating-linear-gradient(to right, rgba(24, 54, 93, .42) 0 1px, transparent 1px calc(var(--cellW, 18px))),
+        repeating-linear-gradient(to bottom, rgba(24, 54, 93, .42) 0 1px, transparent 1px calc(var(--cellH, 18px)));
+    }
+
+    .board.mode3d .rect::before,
+    .board.mode3d .rect::after,
+    .board.mode3d .preview::before,
+    .board.mode3d .preview::after {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+      border: 1px solid rgba(26, 52, 88, .52);
+    }
+
+    .board.mode3d .rect::before,
+    .board.mode3d .preview::before {
+      left: 0;
+      right: 0;
+      top: 100%;
+      height: calc(var(--h) * var(--depth));
+      transform-origin: top;
+      transform: skewX(-42deg);
+      background: var(--face-front, rgba(88, 149, 212, .55));
+      background-image: repeating-linear-gradient(to bottom, rgba(22, 45, 77, .45) 0 1px, transparent 1px 14px);
+    }
+
+    .board.mode3d .rect::after,
+    .board.mode3d .preview::after {
+      top: 0;
+      bottom: 0;
+      left: 100%;
+      width: calc(var(--h) * var(--depth));
+      transform-origin: left;
+      transform: skewY(-48deg);
+      background: var(--face-side, rgba(70, 129, 194, .55));
+      background-image: repeating-linear-gradient(to right, rgba(22, 45, 77, .45) 0 1px, transparent 1px 14px);
+    }
+
+    .board.mode3d .preview {
+      --face-front: rgba(177, 149, 224, .32);
+      --face-side: rgba(145, 117, 195, .3);
+      background-image:
+        repeating-linear-gradient(to right, rgba(66, 56, 92, .32) 0 1px, transparent 1px calc(var(--cellW, 18px))),
+        repeating-linear-gradient(to bottom, rgba(66, 56, 92, .32) 0 1px, transparent 1px calc(var(--cellH, 18px)));
+    }
+
+    .board.mode3d .voxel {
+      position: absolute;
+      --depth: 14px;
+      border: 1px solid rgba(26, 52, 88, .62);
+      background: var(--face-top);
+      transform: translateZ(calc(var(--z, 1) * var(--depth)));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.16);
+    }
+
+    .board.mode3d .voxel::before,
+    .board.mode3d .voxel::after {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+      border: 1px solid rgba(26, 52, 88, .48);
+    }
+
+    .board.mode3d .voxel::before {
+      left: 0;
+      right: 0;
+      top: 100%;
+      height: var(--depth);
+      transform-origin: top;
+      transform: skewX(-42deg);
+      background: var(--face-front);
+    }
+
+    .board.mode3d .voxel::after {
+      top: 0;
+      bottom: 0;
+      left: 100%;
+      width: var(--depth);
+      transform-origin: left;
+      transform: skewY(-48deg);
+      background: var(--face-side);
+    }
+
 
     .side {
       display: flex;
@@ -561,8 +719,7 @@
     <header>
       <div class="title">
         <h1>Shikaku — Calm Blocks</h1>
-        <div class="sub">Drag to draw rectangles. Each rectangle must contain <b>exactly one</b> number and have area
-          equal to that number.</div>
+        <div class="sub">Drag to draw rectangles. In 2D, each rectangle must contain <b>exactly one</b> number and have area equal to that number.</div>
       </div>
       <div id="controlsSlot">
         <div class="panel controls" aria-label="Top controls">
@@ -574,6 +731,10 @@
               <option value="expert">Expert (12×12)</option>
               <option value="insane">Insane (15×15)</option>
             </select>
+          </label>
+          <label class="modeToggle">
+            <input type="checkbox" id="mode3dToggle" />
+            <span>3D Mode</span>
           </label>
           <button class="primary" id="newBtn">New Puzzle</button>
           <button id="resetBtn">Reset</button>
@@ -602,11 +763,13 @@
               Tip: On mobile, drag with one finger. Tap a placed rectangle to remove it.
             </div>
             <div class="legend" id="legend"></div>
+            <label class="rotateCtl" id="rotateCtl" hidden>Rotate <input type="range" id="yaw" min="-180" max="180" step="1" value="-24" /></label>
           </div>
 
           <div class="board" id="board" role="application" aria-label="Shikaku board">
             <div class="grid" id="grid"></div>
             <div class="overlay" id="overlay"></div>
+            <div class="numOverlay" id="numOverlay"></div>
           </div>
         </div>
 
@@ -624,8 +787,7 @@
         <div class="panel directionsPanel" id="directionsPanel">
           <h2>Directions</h2>
           <div class="hint">
-            Drag to draw rectangles. Each rectangle must contain <b>exactly one</b> number and have area equal to that
-            number.
+            Drag to draw rectangles. 2D uses area, while 3D uses volume (base area × height).
           </div>
         </div>
 
@@ -680,7 +842,8 @@
       // ----------------------------
       // Guaranteed-solvable puzzle generator
       // ----------------------------
-      function generatePuzzle(diff) {
+      const MAX_HEIGHT = 3;
+      function generatePuzzle(diff, mode3d) {
         const cfg = {
           easy: { n: 6, targetRects: 7, tries: 700 },
           medium: { n: 8, targetRects: 11, tries: 1100 },
@@ -724,11 +887,14 @@
           }
         }
 
-        // Place one clue per rectangle: clue value = rectangle area
+        // Place one clue per rectangle:
+        // 2D => clue = area
+        // 3D => clue = area * height (height stored only in solution metadata)
         const clues = [];
         const used = new Set();
         for (const r of rects) {
           const a = rectArea(r);
+          const h3 = mode3d ? (1 + Math.floor(Math.random() * MAX_HEIGHT)) : 1;
           let rr, cc, key;
           for (let tries = 0; tries < 200; tries++) {
             rr = r.r1 + Math.floor(Math.random() * h(r));
@@ -737,10 +903,10 @@
             if (!used.has(key)) break;
           }
           used.add(key);
-          clues.push({ r: rr, c: cc, v: a });
+          clues.push({ r: rr, c: cc, v: a * h3, h: h3 });
         }
 
-        return { n, clues };
+        return { n, clues, maxHeight: MAX_HEIGHT };
       }
 
       // ----------------------------
@@ -781,8 +947,12 @@
       const boardEl = el("board");
       const gridEl = el("grid");
       const overlayEl = el("overlay");
+      const numOverlayEl = el("numOverlay");
 
       const diffEl = el("difficulty");
+      const mode3dToggleEl = el("mode3dToggle");
+      const yawEl = el("yaw");
+      const rotateCtlEl = el("rotateCtl");
       const timerEl = el("timer");
       const filledEl = el("filled");
       const rectCountEl = el("rectCount");
@@ -799,8 +969,12 @@
       const clearAllBtn = el("clearAllBtn");
       const pauseBtn = el("pauseBtn");
       const toastEl = el("toast");
+      const hintTextEl = el("hintText");
+      const directionsPanelEl = el("directionsPanel");
 
       let puzzle = null;
+      let is3dMode = false;
+      let zoom3d = 1;
 
       // placements: list of rectangles {r1,c1,r2,c2,colorIndex}
       let placements = [];
@@ -814,7 +988,11 @@
       let dragging = false;
       let dragStart = null; // {r,c}
       let dragEnd = null;   // {r,c}
+      let dragHeight = 1;
+      let dragStartY = 0;
       let previewEl = null;
+      let extruding = false;
+      let extrudeIdx = -1;
 
       // timer
       let t0 = 0;
@@ -857,12 +1035,54 @@
         return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
       }
 
+      function updateModeCopy() {
+        if (is3dMode) {
+          hintTextEl.textContent = "3D: Drag to draw a base rectangle, then drag up/down to set height.";
+          directionsPanelEl.querySelector(".hint").innerHTML =
+            '3D rules: each prism must contain <b>exactly one</b> base clue, and <b>volume</b> (area × height) must match the clue.';
+        } else {
+          hintTextEl.textContent = "Tip: On mobile, drag with one finger. Tap a placed rectangle to remove it.";
+          directionsPanelEl.querySelector(".hint").innerHTML =
+            'Drag to draw rectangles. 2D uses area, while 3D uses volume (base area × height).';
+        }
+      }
+
+      function renderNumberBillboards() {
+        numOverlayEl.innerHTML = "";
+        if (!is3dMode) return;
+        const boardRect = boardEl.getBoundingClientRect();
+        for (let r = 0; r < puzzle.n; r++) {
+          for (let c = 0; c < puzzle.n; c++) {
+            const v = nums[r][c];
+            if (!v) continue;
+            const cellEl = gridEl.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+            if (!cellEl) continue;
+            const cr = cellEl.getBoundingClientRect();
+            const badge = document.createElement("span");
+            badge.className = "numBillboard";
+            badge.textContent = v;
+            badge.style.left = `${cr.left - boardRect.left + cr.width / 2}px`;
+            badge.style.top = `${cr.top - boardRect.top + cr.height / 2}px`;
+            numOverlayEl.appendChild(badge);
+          }
+        }
+      }
+
+      function applyModeUI() {
+        boardEl.classList.toggle("mode3d", is3dMode);
+        rotateCtlEl.hidden = !is3dMode;
+        boardEl.style.setProperty("--yaw", `${yawEl.value}deg`);
+        boardEl.style.setProperty("--zoom", String(zoom3d));
+        updateModeCopy();
+        requestAnimationFrame(renderNumberBillboards);
+      }
+
       function init(diff) {
-        puzzle = generatePuzzle(diff);
+        puzzle = generatePuzzle(diff, is3dMode);
         const n = puzzle.n;
 
         boardEl.style.setProperty("--n", n);
-        boardSizeEl.textContent = `${n}×${n}`;
+        boardSizeEl.textContent = is3dMode ? `${n}×${n}×${puzzle.maxHeight}` : `${n}×${n}`;
 
         // clear
         placements = [];
@@ -895,6 +1115,7 @@
             gridEl.appendChild(cell);
           }
         }
+        requestAnimationFrame(renderNumberBillboards);
 
         // legend chips
         legendEl.innerHTML = "";
@@ -919,7 +1140,7 @@
         startTimer();
 
         renderAll();
-        toast(`New ${diff} puzzle loaded (always solvable).`);
+        toast(`New ${diff} ${is3dMode ? "3D" : "2D"} puzzle loaded.`);
       }
 
       // ----------------------------
@@ -977,18 +1198,54 @@
         placements.forEach((p, idx) => {
           const rect = { r1: p.r1, c1: p.c1, r2: p.r2, c2: p.c2 };
           const box = rectToPx(rect);
-          const d = document.createElement("div");
-          d.className = "rect valid";
           const col = palette[p.colorIndex % palette.length];
-          d.style.background = `color-mix(in srgb, ${col} 45%, white 55%)`;
-          d.style.left = box.left + "px";
-          d.style.top = box.top + "px";
-          d.style.width = box.width + "px";
-          d.style.height = box.height + "px";
-          d.dataset.idx = idx;
-          overlayEl.appendChild(d);
+          const cellW = box.width / (rect.c2 - rect.c1 + 1);
+          const cellH = box.height / (rect.r2 - rect.r1 + 1);
+          const depth = Math.min(cellW, cellH);
+
+          if (is3dMode && (p.h || 0) > 0) {
+            const topFace = `color-mix(in srgb, ${col} 62%, white 38%)`;
+            const frontFace = `color-mix(in srgb, ${col} 70%, black 30%)`;
+            const sideFace = `color-mix(in srgb, ${col} 58%, black 42%)`;
+            for (let r = rect.r1; r <= rect.r2; r++) {
+              for (let c = rect.c1; c <= rect.c2; c++) {
+                for (let z = 1; z <= p.h; z++) {
+                  const v = document.createElement("div");
+                  v.className = "voxel";
+                  v.style.left = (c * cellW) + "px";
+                  v.style.top = (r * cellH) + "px";
+                  v.style.width = `${cellW}px`;
+                  v.style.height = `${cellH}px`;
+                  v.style.setProperty("--z", z);
+                  v.style.setProperty("--face-top", topFace);
+                  v.style.setProperty("--face-front", frontFace);
+                  v.style.setProperty("--face-side", sideFace);
+                  v.style.setProperty("--depth", `${depth}px`);
+                  overlayEl.appendChild(v);
+                }
+              }
+            }
+          } else {
+            const d = document.createElement("div");
+            d.className = "rect valid";
+            d.style.background = `color-mix(in srgb, ${col} 45%, white 55%)`;
+            d.style.setProperty("--face-top", `color-mix(in srgb, ${col} 62%, white 38%)`);
+            d.style.setProperty("--face-front", `color-mix(in srgb, ${col} 70%, black 30%)`);
+            d.style.setProperty("--face-side", `color-mix(in srgb, ${col} 58%, black 42%)`);
+            d.style.setProperty("--cellW", `${cellW}px`);
+            d.style.setProperty("--cellH", `${cellH}px`);
+            d.style.setProperty("--depth", `${depth}px`);
+            d.style.left = box.left + "px";
+            d.style.top = box.top + "px";
+            d.style.width = box.width + "px";
+            d.style.height = box.height + "px";
+            d.style.setProperty("--h", p.h ?? 1);
+            d.dataset.idx = idx;
+            overlayEl.appendChild(d);
+          }
         });
         updateStats();
+        requestAnimationFrame(renderNumberBillboards);
       }
 
       function updateStats() {
@@ -1021,7 +1278,9 @@
           const rect = { r1: p.r1, c1: p.c1, r2: p.r2, c2: p.c2 };
           const { count, clue } = countCluesInRect(rect);
           if (count !== 1) return false;
-          if (area(rect) !== clue.v) return false;
+          if (is3dMode && (!p.h || p.h < 1)) return false;
+          const volume = area(rect) * (p.h || 1);
+          if (volume !== clue.v) return false;
         }
         return true;
       }
@@ -1036,8 +1295,9 @@
       // ----------------------------
       // Placement operations
       // ----------------------------
-      function addPlacement(rect) {
+      function addPlacement(rect, height = 1) {
         const a = area(rect);
+        const volume = a * height;
         const clueInfo = countCluesInRect(rect);
 
         let ok = true;
@@ -1047,13 +1307,13 @@
           ok = false; reason = "Rectangles can’t overlap.";
         } else if (clueInfo.count !== 1) {
           ok = false; reason = "Must include exactly one number.";
-        } else if (a !== clueInfo.clue.v) {
-          ok = false; reason = `Area is ${a}, but number is ${clueInfo.clue.v}.`;
+        } else if (volume !== clueInfo.clue.v) {
+          ok = false; reason = `${is3dMode ? "Volume" : "Area"} is ${is3dMode ? volume : a}, but number is ${clueInfo.clue.v}.`;
         }
 
         if (!ok) {
           mistakes++;
-          renderPreview(rect);
+          renderPreview(rect, height);
           // flash invalid
           if (previewEl) previewEl.classList.add("invalid");
           updateStats();
@@ -1063,12 +1323,53 @@
 
         const colorIndex = placements.length % palette.length;
         const newIdx = placements.length;
-        placements.push({ ...rect, colorIndex });
+        placements.push({ ...rect, h: height, colorIndex });
 
         eachCell(rect, (r, c) => { occ[r][c] = newIdx; });
 
         renderAll();
         toast("Placed.");
+        return true;
+      }
+
+      function addBasePlacement3D(rect) {
+        const clueInfo = countCluesInRect(rect);
+        if (intersectsExisting(rect)) {
+          mistakes++; updateStats(); toast("Rectangles can’t overlap."); return false;
+        }
+        if (clueInfo.count !== 1) {
+          mistakes++; updateStats(); toast("Must include exactly one number."); return false;
+        }
+        const a = area(rect);
+        const target = clueInfo.clue.v / a;
+        if (!Number.isInteger(target) || target < 1 || target > MAX_HEIGHT) {
+          mistakes++; updateStats(); toast(`No valid height 1-${MAX_HEIGHT} fits that clue.`); return false;
+        }
+
+        const colorIndex = placements.length % palette.length;
+        const newIdx = placements.length;
+        placements.push({ ...rect, h: 0, colorIndex });
+        eachCell(rect, (r, c) => { occ[r][c] = newIdx; });
+        renderAll();
+        toast("Base created. Drag on it to extrude.");
+        return true;
+      }
+
+      function updatePlacementHeight(idx, newHeight) {
+        const p = placements[idx];
+        if (!p) return false;
+        const rect = { r1: p.r1, c1: p.c1, r2: p.r2, c2: p.c2 };
+        const clueInfo = countCluesInRect(rect);
+        const vol = area(rect) * newHeight;
+        if (clueInfo.count !== 1 || vol !== clueInfo.clue.v) {
+          mistakes++;
+          updateStats();
+          toast(`Volume is ${vol}, but number is ${clueInfo.clue.v}.`);
+          return false;
+        }
+        p.h = newHeight;
+        renderAll();
+        toast(`Extruded to height ${newHeight}.`);
         return true;
       }
 
@@ -1114,6 +1415,13 @@
       // Pointer / touch handling
       // ----------------------------
       function getCellFromPoint(clientX, clientY) {
+        if (is3dMode) {
+          const hit = document.elementFromPoint(clientX, clientY);
+          const cellEl = hit && hit.closest ? hit.closest(".cell") : null;
+          if (cellEl && gridEl.contains(cellEl)) {
+            return { r: Number(cellEl.dataset.r), c: Number(cellEl.dataset.c) };
+          }
+        }
         const rect = boardEl.getBoundingClientRect();
         const x = clientX - rect.left;
         const y = clientY - rect.top;
@@ -1124,22 +1432,37 @@
         return { r, c };
       }
 
-      function renderPreview(rect) {
+      function renderPreview(rect, height = 1) {
         if (!previewEl) {
           previewEl = document.createElement("div");
           previewEl.className = "preview";
           overlayEl.appendChild(previewEl);
         }
         const box = rectToPx(rect);
+        const cellW = box.width / (rect.c2 - rect.c1 + 1);
+        const cellH = box.height / (rect.r2 - rect.r1 + 1);
+        const depth = Math.min(cellW, cellH);
         previewEl.style.left = box.left + "px";
         previewEl.style.top = box.top + "px";
         previewEl.style.width = box.width + "px";
         previewEl.style.height = box.height + "px";
+        previewEl.style.setProperty("--h", height);
+        previewEl.style.setProperty("--cellW", `${cellW}px`);
+        previewEl.style.setProperty("--cellH", `${cellH}px`);
+        previewEl.style.setProperty("--depth", `${depth}px`);
 
         // live validation styling
-        const a = area(rect);
+        const v = area(rect) * height;
         const { count, clue } = countCluesInRect(rect);
-        const bad = intersectsExisting(rect) || count !== 1 || (clue && a !== clue.v);
+        let bad = intersectsExisting(rect) || count !== 1;
+        if (!bad && clue) {
+          if (is3dMode && height === 0) {
+            const req = clue.v / area(rect);
+            bad = !Number.isInteger(req) || req < 1 || req > MAX_HEIGHT;
+          } else {
+            bad = v !== clue.v;
+          }
+        }
         previewEl.classList.toggle("invalid", bad);
       }
 
@@ -1159,24 +1482,65 @@
 
         tapCandidate = { ...cell, t: performance.now(), x: e.clientX, y: e.clientY };
 
+        if (is3dMode && occ[cell.r][cell.c] !== -1) {
+          extruding = true;
+          extrudeIdx = occ[cell.r][cell.c];
+          dragging = false;
+          dragStartY = e.clientY;
+          dragHeight = Math.max(1, placements[extrudeIdx].h || 1);
+          const p = placements[extrudeIdx];
+          renderPreview({ r1: p.r1, c1: p.c1, r2: p.r2, c2: p.c2 }, dragHeight);
+          e.preventDefault();
+          return;
+        }
+
         dragging = true;
         dragStart = cell;
         dragEnd = cell;
-        renderPreview(clampRect(dragStart, dragEnd));
+        dragHeight = is3dMode ? 0 : 1;
+        dragStartY = e.clientY;
+        renderPreview(clampRect(dragStart, dragEnd), dragHeight);
         e.preventDefault();
       }
 
       function onPointerMove(e) {
+        if (extruding) {
+          const p = placements[extrudeIdx];
+          if (!p) return;
+          const deltaY = dragStartY - e.clientY;
+          dragHeight = Math.max(1, Math.min(MAX_HEIGHT, 1 + Math.round(deltaY / 36)));
+          renderPreview({ r1: p.r1, c1: p.c1, r2: p.r2, c2: p.c2 }, dragHeight);
+          e.preventDefault();
+          return;
+        }
         if (!dragging) return;
         const cell = getCellFromPoint(e.clientX, e.clientY);
         if (!cell) return;
 
         dragEnd = cell;
-        renderPreview(clampRect(dragStart, dragEnd));
+        dragHeight = is3dMode ? 0 : 1;
+        renderPreview(clampRect(dragStart, dragEnd), dragHeight);
         e.preventDefault();
       }
 
       function onPointerUp(e) {
+        if (extruding) {
+          const dt = tapCandidate ? performance.now() - tapCandidate.t : 999;
+          const dx = tapCandidate ? Math.abs(e.clientX - tapCandidate.x) : 999;
+          const dy = tapCandidate ? Math.abs(e.clientY - tapCandidate.y) : 999;
+          const isTap = dt < 250 && dx < 10 && dy < 10;
+          if (isTap) {
+            removePlacementAtCell(tapCandidate.r, tapCandidate.c);
+          } else {
+            updatePlacementHeight(extrudeIdx, dragHeight);
+          }
+          extruding = false;
+          extrudeIdx = -1;
+          clearPreview();
+          tapCandidate = null;
+          e.preventDefault();
+          return;
+        }
         if (!dragging) return;
         dragging = false;
 
@@ -1202,7 +1566,11 @@
         }
 
         clearPreview();
-        addPlacement(rect);
+        if (is3dMode) {
+          addBasePlacement3D(rect);
+        } else {
+          addPlacement(rect, dragHeight);
+        }
 
         tapCandidate = null;
         e.preventDefault();
@@ -1210,8 +1578,11 @@
 
       function onPointerCancel() {
         dragging = false;
+        extruding = false;
+        extrudeIdx = -1;
         dragStart = null;
         dragEnd = null;
+        dragHeight = 1;
         clearPreview();
       }
 
@@ -1222,6 +1593,15 @@
 
       newBtn.addEventListener("click", () => init(diffEl.value));
       diffEl.addEventListener("change", () => init(diffEl.value));
+      mode3dToggleEl.addEventListener("change", () => {
+        is3dMode = mode3dToggleEl.checked;
+        applyModeUI();
+        init(diffEl.value);
+      });
+      yawEl.addEventListener("input", () => {
+        boardEl.style.setProperty("--yaw", `${yawEl.value}deg`);
+        requestAnimationFrame(renderNumberBillboards);
+      });
       resetBtn.addEventListener("click", () => {
         resetPlacements();
         mistakes = 0;
@@ -1253,10 +1633,19 @@
       boardEl.addEventListener("pointerup", onPointerUp);
       boardEl.addEventListener("pointercancel", onPointerCancel);
       boardEl.addEventListener("contextmenu", (e) => e.preventDefault());
+      boardEl.addEventListener("wheel", (e) => {
+        if (!is3dMode) return;
+        e.preventDefault();
+        const delta = Math.sign(e.deltaY) * -0.08;
+        zoom3d = Math.max(0.7, Math.min(1.8, zoom3d + delta));
+        boardEl.style.setProperty("--zoom", String(zoom3d));
+        requestAnimationFrame(renderNumberBillboards);
+      }, { passive: false });
 
       window.addEventListener("resize", () => {
         renderAll();
-        if (dragging && dragStart && dragEnd) renderPreview(clampRect(dragStart, dragEnd));
+        if (dragging && dragStart && dragEnd) renderPreview(clampRect(dragStart, dragEnd), dragHeight);
+        requestAnimationFrame(renderNumberBillboards);
       });
 
       window.addEventListener("keydown", (e) => {
@@ -1267,6 +1656,7 @@
       });
 
       // Start
+      applyModeUI();
       init(diffEl.value);
       relocateUI();
     })();
