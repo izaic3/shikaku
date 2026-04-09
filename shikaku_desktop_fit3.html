@@ -373,6 +373,88 @@
       background: rgba(255, 107, 107, .12);
     }
 
+    .board.mode3d .preview.invalid::before,
+    .board.mode3d .preview.invalid::after {
+      background: rgba(255, 142, 142, .35);
+      border-color: rgba(220, 90, 90, .8);
+    }
+
+    .modeToggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.75);
+      cursor: pointer;
+      user-select: none;
+      font-size: 13px;
+      color: var(--ink);
+    }
+
+    .rotateCtl {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .board.mode3d {
+      --yawAmt: 12px;
+    }
+
+    .board.mode3d .grid {
+      background:
+        linear-gradient(140deg, rgba(255, 255, 255, .22), rgba(130, 160, 210, .08));
+    }
+
+    .board.mode3d .rect,
+    .board.mode3d .preview {
+      --h: 1;
+      --rise: calc(var(--h) * 10px);
+      --run: calc(var(--h) * var(--yawScale, 7px));
+      border-radius: 4px;
+      transform: translate(calc(var(--run) * -1), calc(var(--rise) * -1));
+      overflow: visible;
+    }
+
+    .board.mode3d .rect::before,
+    .board.mode3d .preview::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: var(--rise);
+      top: calc(var(--rise) * -1);
+      transform: skewX(-45deg);
+      transform-origin: left bottom;
+      border: 1px solid rgba(34, 48, 74, .42);
+      border-bottom: 0;
+      background: var(--face-top, rgba(176, 214, 246, .72));
+      border-top-left-radius: 3px;
+      border-top-right-radius: 3px;
+      pointer-events: none;
+    }
+
+    .board.mode3d .rect::after,
+    .board.mode3d .preview::after {
+      content: "";
+      position: absolute;
+      right: calc(var(--run) * -1);
+      top: calc(var(--rise) * -1);
+      width: var(--run);
+      height: 100%;
+      transform: skewY(-45deg);
+      transform-origin: left top;
+      border: 1px solid rgba(34, 48, 74, .42);
+      border-left: 0;
+      background: var(--face-side, rgba(146, 189, 228, .78));
+      pointer-events: none;
+    }
+
+
     .side {
       display: flex;
       flex-direction: column;
@@ -561,8 +643,7 @@
     <header>
       <div class="title">
         <h1>Shikaku — Calm Blocks</h1>
-        <div class="sub">Drag to draw rectangles. Each rectangle must contain <b>exactly one</b> number and have area
-          equal to that number.</div>
+        <div class="sub">Drag to draw rectangles. In 2D, each rectangle must contain <b>exactly one</b> number and have area equal to that number.</div>
       </div>
       <div id="controlsSlot">
         <div class="panel controls" aria-label="Top controls">
@@ -574,6 +655,10 @@
               <option value="expert">Expert (12×12)</option>
               <option value="insane">Insane (15×15)</option>
             </select>
+          </label>
+          <label class="modeToggle">
+            <input type="checkbox" id="mode3dToggle" />
+            <span>3D Mode</span>
           </label>
           <button class="primary" id="newBtn">New Puzzle</button>
           <button id="resetBtn">Reset</button>
@@ -602,6 +687,7 @@
               Tip: On mobile, drag with one finger. Tap a placed rectangle to remove it.
             </div>
             <div class="legend" id="legend"></div>
+            <label class="rotateCtl" id="rotateCtl" hidden>Rotate <input type="range" id="yaw" min="-45" max="45" step="1" value="-24" /></label>
           </div>
 
           <div class="board" id="board" role="application" aria-label="Shikaku board">
@@ -624,8 +710,7 @@
         <div class="panel directionsPanel" id="directionsPanel">
           <h2>Directions</h2>
           <div class="hint">
-            Drag to draw rectangles. Each rectangle must contain <b>exactly one</b> number and have area equal to that
-            number.
+            Drag to draw rectangles. 2D uses area, while 3D uses volume (base area × height).
           </div>
         </div>
 
@@ -680,7 +765,8 @@
       // ----------------------------
       // Guaranteed-solvable puzzle generator
       // ----------------------------
-      function generatePuzzle(diff) {
+      const MAX_HEIGHT = 3;
+      function generatePuzzle(diff, mode3d) {
         const cfg = {
           easy: { n: 6, targetRects: 7, tries: 700 },
           medium: { n: 8, targetRects: 11, tries: 1100 },
@@ -724,11 +810,14 @@
           }
         }
 
-        // Place one clue per rectangle: clue value = rectangle area
+        // Place one clue per rectangle:
+        // 2D => clue = area
+        // 3D => clue = area * height (height stored only in solution metadata)
         const clues = [];
         const used = new Set();
         for (const r of rects) {
           const a = rectArea(r);
+          const h3 = mode3d ? (1 + Math.floor(Math.random() * MAX_HEIGHT)) : 1;
           let rr, cc, key;
           for (let tries = 0; tries < 200; tries++) {
             rr = r.r1 + Math.floor(Math.random() * h(r));
@@ -737,10 +826,10 @@
             if (!used.has(key)) break;
           }
           used.add(key);
-          clues.push({ r: rr, c: cc, v: a });
+          clues.push({ r: rr, c: cc, v: a * h3, h: h3 });
         }
 
-        return { n, clues };
+        return { n, clues, maxHeight: MAX_HEIGHT };
       }
 
       // ----------------------------
@@ -783,6 +872,9 @@
       const overlayEl = el("overlay");
 
       const diffEl = el("difficulty");
+      const mode3dToggleEl = el("mode3dToggle");
+      const yawEl = el("yaw");
+      const rotateCtlEl = el("rotateCtl");
       const timerEl = el("timer");
       const filledEl = el("filled");
       const rectCountEl = el("rectCount");
@@ -799,8 +891,11 @@
       const clearAllBtn = el("clearAllBtn");
       const pauseBtn = el("pauseBtn");
       const toastEl = el("toast");
+      const hintTextEl = el("hintText");
+      const directionsPanelEl = el("directionsPanel");
 
       let puzzle = null;
+      let is3dMode = false;
 
       // placements: list of rectangles {r1,c1,r2,c2,colorIndex}
       let placements = [];
@@ -814,6 +909,8 @@
       let dragging = false;
       let dragStart = null; // {r,c}
       let dragEnd = null;   // {r,c}
+      let dragHeight = 1;
+      let dragStartY = 0;
       let previewEl = null;
 
       // timer
@@ -857,12 +954,32 @@
         return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
       }
 
+      function updateModeCopy() {
+        if (is3dMode) {
+          hintTextEl.textContent = "3D: Drag to draw a base rectangle, then drag up/down to set height.";
+          directionsPanelEl.querySelector(".hint").innerHTML =
+            '3D rules: each prism must contain <b>exactly one</b> base clue, and <b>volume</b> (area × height) must match the clue.';
+        } else {
+          hintTextEl.textContent = "Tip: On mobile, drag with one finger. Tap a placed rectangle to remove it.";
+          directionsPanelEl.querySelector(".hint").innerHTML =
+            'Drag to draw rectangles. 2D uses area, while 3D uses volume (base area × height).';
+        }
+      }
+
+      function applyModeUI() {
+        boardEl.classList.toggle("mode3d", is3dMode);
+        rotateCtlEl.hidden = !is3dMode;
+        const yawScale = 4 + Math.round((Number(yawEl.value) + 45) / 9);
+        boardEl.style.setProperty("--yawScale", `${yawScale}px`);
+        updateModeCopy();
+      }
+
       function init(diff) {
-        puzzle = generatePuzzle(diff);
+        puzzle = generatePuzzle(diff, is3dMode);
         const n = puzzle.n;
 
         boardEl.style.setProperty("--n", n);
-        boardSizeEl.textContent = `${n}×${n}`;
+        boardSizeEl.textContent = is3dMode ? `${n}×${n}×${puzzle.maxHeight}` : `${n}×${n}`;
 
         // clear
         placements = [];
@@ -919,7 +1036,7 @@
         startTimer();
 
         renderAll();
-        toast(`New ${diff} puzzle loaded (always solvable).`);
+        toast(`New ${diff} ${is3dMode ? "3D" : "2D"} puzzle loaded.`);
       }
 
       // ----------------------------
@@ -980,11 +1097,14 @@
           const d = document.createElement("div");
           d.className = "rect valid";
           const col = palette[p.colorIndex % palette.length];
-          d.style.background = `color-mix(in srgb, ${col} 45%, white 55%)`;
+          d.style.background = `color-mix(in srgb, ${col} 55%, white 45%)`;
+          d.style.setProperty("--face-top", `color-mix(in srgb, ${col} 40%, white 60%)`);
+          d.style.setProperty("--face-side", `color-mix(in srgb, ${col} 72%, #5d84b5 28%)`);
           d.style.left = box.left + "px";
           d.style.top = box.top + "px";
           d.style.width = box.width + "px";
           d.style.height = box.height + "px";
+          d.style.setProperty("--h", p.h || 1);
           d.dataset.idx = idx;
           overlayEl.appendChild(d);
         });
@@ -1021,7 +1141,8 @@
           const rect = { r1: p.r1, c1: p.c1, r2: p.r2, c2: p.c2 };
           const { count, clue } = countCluesInRect(rect);
           if (count !== 1) return false;
-          if (area(rect) !== clue.v) return false;
+          const volume = area(rect) * (p.h || 1);
+          if (volume !== clue.v) return false;
         }
         return true;
       }
@@ -1036,8 +1157,9 @@
       // ----------------------------
       // Placement operations
       // ----------------------------
-      function addPlacement(rect) {
+      function addPlacement(rect, height = 1) {
         const a = area(rect);
+        const volume = a * height;
         const clueInfo = countCluesInRect(rect);
 
         let ok = true;
@@ -1047,13 +1169,13 @@
           ok = false; reason = "Rectangles can’t overlap.";
         } else if (clueInfo.count !== 1) {
           ok = false; reason = "Must include exactly one number.";
-        } else if (a !== clueInfo.clue.v) {
-          ok = false; reason = `Area is ${a}, but number is ${clueInfo.clue.v}.`;
+        } else if (volume !== clueInfo.clue.v) {
+          ok = false; reason = `${is3dMode ? "Volume" : "Area"} is ${is3dMode ? volume : a}, but number is ${clueInfo.clue.v}.`;
         }
 
         if (!ok) {
           mistakes++;
-          renderPreview(rect);
+          renderPreview(rect, height);
           // flash invalid
           if (previewEl) previewEl.classList.add("invalid");
           updateStats();
@@ -1063,7 +1185,7 @@
 
         const colorIndex = placements.length % palette.length;
         const newIdx = placements.length;
-        placements.push({ ...rect, colorIndex });
+        placements.push({ ...rect, h: height, colorIndex });
 
         eachCell(rect, (r, c) => { occ[r][c] = newIdx; });
 
@@ -1114,7 +1236,7 @@
       // Pointer / touch handling
       // ----------------------------
       function getCellFromPoint(clientX, clientY) {
-        const rect = boardEl.getBoundingClientRect();
+        const rect = gridEl.getBoundingClientRect();
         const x = clientX - rect.left;
         const y = clientY - rect.top;
         const n = puzzle.n;
@@ -1124,7 +1246,7 @@
         return { r, c };
       }
 
-      function renderPreview(rect) {
+      function renderPreview(rect, height = 1) {
         if (!previewEl) {
           previewEl = document.createElement("div");
           previewEl.className = "preview";
@@ -1135,11 +1257,14 @@
         previewEl.style.top = box.top + "px";
         previewEl.style.width = box.width + "px";
         previewEl.style.height = box.height + "px";
+        previewEl.style.setProperty("--h", height);
+        previewEl.style.setProperty("--face-top", "rgba(200, 225, 250, .58)");
+        previewEl.style.setProperty("--face-side", "rgba(161, 197, 233, .65)");
 
         // live validation styling
-        const a = area(rect);
+        const v = area(rect) * height;
         const { count, clue } = countCluesInRect(rect);
-        const bad = intersectsExisting(rect) || count !== 1 || (clue && a !== clue.v);
+        const bad = intersectsExisting(rect) || count !== 1 || (clue && v !== clue.v);
         previewEl.classList.toggle("invalid", bad);
       }
 
@@ -1162,7 +1287,9 @@
         dragging = true;
         dragStart = cell;
         dragEnd = cell;
-        renderPreview(clampRect(dragStart, dragEnd));
+        dragHeight = 1;
+        dragStartY = e.clientY;
+        renderPreview(clampRect(dragStart, dragEnd), dragHeight);
         e.preventDefault();
       }
 
@@ -1172,7 +1299,13 @@
         if (!cell) return;
 
         dragEnd = cell;
-        renderPreview(clampRect(dragStart, dragEnd));
+        if (is3dMode) {
+          const deltaY = dragStartY - e.clientY;
+          dragHeight = Math.max(1, Math.min(MAX_HEIGHT, 1 + Math.round(deltaY / 36)));
+        } else {
+          dragHeight = 1;
+        }
+        renderPreview(clampRect(dragStart, dragEnd), dragHeight);
         e.preventDefault();
       }
 
@@ -1202,7 +1335,7 @@
         }
 
         clearPreview();
-        addPlacement(rect);
+        addPlacement(rect, dragHeight);
 
         tapCandidate = null;
         e.preventDefault();
@@ -1212,6 +1345,7 @@
         dragging = false;
         dragStart = null;
         dragEnd = null;
+        dragHeight = 1;
         clearPreview();
       }
 
@@ -1222,6 +1356,15 @@
 
       newBtn.addEventListener("click", () => init(diffEl.value));
       diffEl.addEventListener("change", () => init(diffEl.value));
+      mode3dToggleEl.addEventListener("change", () => {
+        is3dMode = mode3dToggleEl.checked;
+        applyModeUI();
+        init(diffEl.value);
+      });
+      yawEl.addEventListener("input", () => {
+        const yawScale = 4 + Math.round((Number(yawEl.value) + 45) / 9);
+        boardEl.style.setProperty("--yawScale", `${yawScale}px`);
+      });
       resetBtn.addEventListener("click", () => {
         resetPlacements();
         mistakes = 0;
@@ -1256,7 +1399,7 @@
 
       window.addEventListener("resize", () => {
         renderAll();
-        if (dragging && dragStart && dragEnd) renderPreview(clampRect(dragStart, dragEnd));
+        if (dragging && dragStart && dragEnd) renderPreview(clampRect(dragStart, dragEnd), dragHeight);
       });
 
       window.addEventListener("keydown", (e) => {
@@ -1267,6 +1410,7 @@
       });
 
       // Start
+      applyModeUI();
       init(diffEl.value);
       relocateUI();
     })();
